@@ -1,0 +1,4 @@
+# Optional: add a TomTom API key for live traffic/incident information.
+# Without this key, weather, routing, fares and AI recommendation still work.
+TOMTOM_API_KEY=
+PORT=5000

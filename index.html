@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Namma Commuter AI</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  .glass-card{background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border:1px solid rgba(226,232,240,.9);box-shadow:0 10px 30px rgba(15,23,42,.07)}
+  .location-card{transition:transform .2s ease,box-shadow .2s ease}.location-card:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(15,23,42,.12)}
+  .loading{opacity:.65;pointer-events:none}
+</style>
+</head>
+<body class="text-slate-800 font-sans min-h-screen pb-12 bg-slate-50">
+<header class="bg-white border-b border-slate-200"><div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between"><div><h1 class="text-2xl md:text-3xl font-bold text-slate-900">Namma Commuter</h1><p class="text-sm text-slate-500 mt-1">AI-Powered Bengaluru Daily Commute Planner</p></div><div id="backend-status" class="text-xs px-3 py-2 rounded-full bg-slate-100 text-slate-600">Checking connection...</div></div></header>
+<main class="max-w-7xl mx-auto px-6 py-8">
+<section class="glass-card rounded-2xl p-6 mb-7"><div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-end"><div><label class="block text-sm font-semibold text-slate-700 mb-2">Starting Point</label><select id="from" class="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white"><option>Select starting point</option></select></div><div><label class="block text-sm font-semibold text-slate-700 mb-2">Destination</label><select id="to" class="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white"><option>Select destination</option></select></div><button id="sync" onclick="syncRoute()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl px-5 py-3 transition">Sync Route</button></div><p id="message" class="text-sm text-slate-500 mt-4">Select your starting point and destination.</p></section>
+<section class="glass-card rounded-2xl p-5 mb-7"><div class="grid grid-cols-1 md:grid-cols-4 gap-4"><div><p class="text-xs text-slate-500">Weather</p><p id="weather" class="font-semibold mt-1">Loading...</p></div><div><p class="text-xs text-slate-500">Temperature</p><p id="temp" class="font-semibold mt-1">--</p></div><div><p class="text-xs text-slate-500">Road Traffic</p><p id="traffic" class="font-semibold mt-1">--</p></div><div><p class="text-xs text-slate-500">Last Updated</p><p id="updated" class="font-semibold mt-1">--</p></div></div></section>
+<section class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-7"><div class="glass-card rounded-2xl p-5"><p class="text-sm text-slate-500">Road Traffic</p><h3 id="trafficTitle" class="text-lg font-bold mt-1">Checking...</h3><p id="trafficDetail" class="text-sm text-slate-500 mt-2">--</p></div><div class="glass-card rounded-2xl p-5"><p class="text-sm text-slate-500">Waterlogging</p><h3 id="waterTitle" class="text-lg font-bold mt-1">Checking...</h3><p id="waterDetail" class="text-sm text-slate-500 mt-2">--</p></div><div class="glass-card rounded-2xl p-5"><p class="text-sm text-slate-500">Construction</p><h3 id="constructionTitle" class="text-lg font-bold mt-1">Checking...</h3><p id="constructionDetail" class="text-sm text-slate-500 mt-2">--</p></div></section>
+<section class="glass-card rounded-2xl p-6 mb-7"><div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4"><div><h2 class="text-xl font-bold">Metro Line Health</h2><p class="text-sm text-slate-500 mt-1">Current service status and frequency</p></div><span id="metroBadge" class="text-xs text-purple-700 bg-purple-100 px-3 py-1 rounded-full font-semibold cursor-pointer select-none" ondblclick="toggleDemo()">Metro Service Status</span></div><div class="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6"><div><p class="text-xs text-slate-500">Service Status</p><p id="metroStatus" class="text-lg font-bold mt-1">Checking...</p></div><div><p class="text-xs text-slate-500">Frequency</p><p id="frequency" class="text-lg font-bold mt-1">--</p></div><div><p class="text-xs text-slate-500">Service Window</p><p id="window" class="text-lg font-bold mt-1">--</p></div></div></section>
+<section><div class="mb-5"><h2 class="text-2xl font-bold">Recommended Travel Plans</h2><p class="text-sm text-slate-500 mt-1">Compare Metro, BMTC and Namma Yatri options.</p></div><div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div id="cardMetro" class="glass-card rounded-2xl p-6 location-card"><p class="text-xs font-semibold text-purple-600 uppercase">Plan A</p><h3 class="text-xl font-bold mt-1">Metro</h3><p id="aiMetro" class="text-xs font-semibold text-purple-600 mt-1"></p><div class="mt-6 space-y-4"><div><p class="text-xs text-slate-500">ETA</p><p id="metroEta" class="text-2xl font-bold">--</p></div><div><p class="text-xs text-slate-500">Estimated Fare</p><p id="metroFare" class="text-lg font-semibold">--</p></div><div><p class="text-xs text-slate-500">Frequency</p><p id="metroFreq" class="text-sm font-semibold">--</p></div></div></div>
+<div id="cardBus" class="glass-card rounded-2xl p-6 location-card"><p class="text-xs font-semibold text-blue-600 uppercase">Plan B</p><h3 class="text-xl font-bold mt-1">BMTC Bus</h3><p id="aiBus" class="text-xs font-semibold text-purple-600 mt-1"></p><div class="mt-6 space-y-4"><div><p class="text-xs text-slate-500">ETA</p><p id="busEta" class="text-2xl font-bold">--</p></div><div><p class="text-xs text-slate-500">Estimated Fare</p><p id="busFare" class="text-lg font-semibold">--</p></div><div><p class="text-xs text-slate-500">Nearest BMTC Stop</p><p id="busStop" class="text-sm font-semibold">--</p></div></div></div>
+<div id="cardAuto" class="glass-card rounded-2xl p-6 location-card"><p class="text-xs font-semibold text-green-600 uppercase">Plan C</p><h3 class="text-xl font-bold mt-1">Auto / Cab</h3><p id="aiAuto" class="text-xs font-semibold text-purple-600 mt-1"></p><div class="mt-6 space-y-4"><div><p class="text-xs text-slate-500">ETA</p><p id="autoEta" class="text-2xl font-bold">--</p></div><div><p class="text-xs text-slate-500">Estimated Fare</p><p id="autoFare" class="text-lg font-semibold">--</p></div><div><p class="text-xs text-slate-500">Service</p><p class="text-sm font-semibold">Namma Yatri</p></div><a href="https://www.nammayatri.in/" target="_blank" class="inline-block bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">Open Namma Yatri</a></div></div>
+</div></section>
+<section id="aiPanel" class="hidden glass-card rounded-2xl p-6 mt-7"><h2 class="text-xl font-bold">AI Recommendation</h2><p id="aiResult" class="text-lg font-semibold mt-2"></p><p id="aiReason" class="text-sm text-slate-500 mt-2"></p><div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-5"><div><p class="text-xs text-slate-500">ML Model</p><p id="aiModel" class="font-semibold">--</p></div><div><p class="text-xs text-slate-500">Confidence</p><p id="aiConfidence" class="font-semibold">--</p></div><div><p class="text-xs text-slate-500">Distance</p><p id="aiDistance" class="font-semibold">--</p></div><div><p class="text-xs text-slate-500">Rain</p><p id="aiRain" class="font-semibold">--</p></div></div></section>
+<footer class="text-center text-xs text-slate-400 mt-10">Namma Commuter • AI Smart Mobility Hackathon</footer>
+</main>
+<script>
+let demo=false;
+const $=id=>document.getElementById(id);
+const safe=(v,f='--')=>(v===undefined||v===null||v===''?'':v)||f;
+async function load(){
+  try{
+    const r=await fetch('/api/locations'); const d=await r.json();
+    Object.keys(d.locations||{}).sort().forEach(n=>{ $('from').add(new Option(n,n)); $('to').add(new Option(n,n)); });
+    $('from').value='Majestic'; $('to').value='Indiranagar';
+    $('backend-status').textContent='Backend Connected'; $('backend-status').className='text-xs px-3 py-2 rounded-full bg-green-100 text-green-700';
+    await syncRoute();
+  }catch(e){ $('backend-status').textContent='Backend Not Connected'; $('backend-status').className='text-xs px-3 py-2 rounded-full bg-red-100 text-red-700'; $('message').textContent='Start the backend with npm start.'; }
+}
+async function syncRoute(){
+  const from=$('from').value,to=$('to').value;if(!from||!to||from===to){$('message').textContent='Please select two different locations.';return;}
+  $('sync').disabled=true;$('sync').textContent='Syncing...';document.body.classList.add('loading');
+  try{
+    const r=await fetch(`/api/commute?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to calculate route');
+    render(d);$('message').textContent=`Route synced: ${from} → ${to}`;
+  }catch(e){$('message').textContent=e.message;}finally{$('sync').disabled=false;$('sync').textContent='Sync Route';document.body.classList.remove('loading');}
+}
+function render(d){
+ const m=d.planA,b=d.planB,a=d.planC,l=d.live,ai=d.aiRecommendation;
+ $('metroStatus').textContent=m.status;$('frequency').textContent=m.frequency;$('window').textContent=m.serviceWindow;$('metroFreq').textContent=m.frequency;$('metroEta').textContent=m.available?`${m.etaMinutes+(demo?5:0)} min`:'Not operating';$('metroFare').textContent=m.available?`₹${m.fare}`:'--';
+ $('busEta').textContent=`${b.etaMinutes} min`;$('busFare').textContent=`₹${b.fare}`;$('busStop').textContent=safe(b.nearestStop,'Nearby BMTC stop');
+ $('autoEta').textContent=`${a.etaMinutes} min`;$('autoFare').textContent=`₹${a.fare}`;
+ $('traffic').textContent=l.traffic.status;$('trafficTitle').textContent=l.traffic.status;$('trafficDetail').textContent=l.traffic.available?`Current ${l.traffic.currentSpeed} km/h; free-flow ${l.traffic.freeFlowSpeed} km/h.`:'Live traffic key not configured.';
+ $('waterTitle').textContent=l.waterlogging.problem?'Problem reported':'No problem reported';$('waterDetail').textContent=l.waterlogging.problem?'Current flooding/waterlogging incident reported.':(l.weather.precipitation>0?`Rain detected (${l.weather.precipitation} mm); no flooding incident reported.`:'No current flooding/waterlogging incident reported.');
+ $('constructionTitle').textContent=l.roadWorks.problem?'Construction reported':'No problem reported';$('constructionDetail').textContent=l.roadWorks.problem?'Current roadwork/construction incident reported.':'No current roadwork/construction incident reported.';
+ $('weather').textContent=l.weather.description;$('temp').textContent=l.weather.temperature===null?'--':`${l.weather.temperature}°C`;$('updated').textContent=new Date(d.updated).toLocaleTimeString('en-IN');
+ $('aiMetro').textContent='';$('aiBus').textContent='';$('aiAuto').textContent='';const target=ai.prediction==='Metro'?'aiMetro':ai.prediction==='BMTC Bus'?'aiBus':'aiAuto';$(target).textContent=`🧠 AI Recommended • ${ai.confidence}% confidence`;
+ $('aiPanel').classList.remove('hidden');$('aiResult').textContent=`Recommended: ${ai.prediction}`;$('aiReason').textContent=ai.explanation;$('aiModel').textContent=ai.model;$('aiConfidence').textContent=`${ai.confidence}%`;$('aiDistance').textContent=`${d.route.distanceKm} km`;$('aiRain').textContent=`${ai.features.rainMm} mm`;
+}
+function toggleDemo(){demo=!demo;$('metroBadge').textContent=demo?'Demo Delay Mode Active':'Metro Service Status';if($('from').value&&$('to').value)syncRoute();}
+load();
+</script>
+</body>
+</html>
